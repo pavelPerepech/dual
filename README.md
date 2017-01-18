@@ -1,4 +1,6 @@
 # dual
+Sample WEB-application: can start standalone and on tomcat
+
 ## Build ##
 Standart ant build with Ivy Extension.
 Install Apache Ant: http://ant.apache.org/ and Apache Ivy http://ant.apache.org/ivy/
