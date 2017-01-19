@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="teach-jetty" default="distrib">
+    <property file="ivy.properties"/>
+    <property name="version" value="1.0.0"/>
+    <property name="src" value="src"/>
+    <property name="bld" value="bld"/>
+    <property name="dist" value="distribution"/>
+    <property name="tmp" value="temp"/>
+
+    <target name="init" description="Init Directories Structure">
+        <mkdir dir="${bld}"/>
+        <mkdir dir="${bld}/META-INF"/>
+        <mkdir dir="${bld}/WEB-INF"/>
+        <mkdir dir="${bld}/WEB-INF/classes"/>
+        <mkdir dir="${bld}/WEB-INF/lib"/>
+        <mkdir dir="${dist}"/>
+        <mkdir dir="lib"/>
+    </target>
+
+    <target name="resolve" description="--> retrieve dependencies with ivy" depends="init">
+        <ivy:retrieve/>
+    </target>
+
+    <target name="compile" description="Compile..." depends="init, resolve">
+        <javac  srcdir="${src}"
+                destdir="${bld}/WEB-INF/classes"
+                source="1.8"
+                debug="on">
+            <classpath>
+                <fileset dir="lib">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+        <move file="${bld}/WEB-INF/classes/Launcher.class" todir="${bld}"/>
+    </target>
+
+    <target name="jetty-lib" description="Unpack Jetty Lib" depends="resolve">
+        <delete dir="${tmp}"/>
+        <mkdir dir="${tmp}"/>
+        <copy todir="${tmp}">
+            <fileset dir="lib">
+                <include name="jetty*.jar"/>
+                <exclude name="jetty*-javadoc.jar"/>
+                <exclude name="jetty*-sources.jar"/>
+                <include name="javax.servlet-api*.jar"/>
+                <include name="apache-el-*.jar"/>
+<!--
+                <include name="apache-jsp-*.jar"/>
+                <exclude name="apache-jsp-*-javadoc.jar"/>
+                <exclude name="apache-jsp-*-sources.jar"/>
+-->
+            </fileset>
+        </copy>
+        <unzip dest="${bld}">
+            <patternset>
+                <exclude name="*.html"/>
+            </patternset>
+            <fileset dir="${tmp}">
+                <include name="*.jar"/>
+            </fileset>
+        </unzip>
+        <delete dir="${tmp}"/>
+        <delete dir="${bld}/META-INF/maven"/>
+    </target>
+
+    <target name="manifest" description="Create MANIFEST.MF">
+        <manifest file="${bld}/META-INF/MANIFEST.MF">
+            <attribute name="Built-By" value="${user.name}"/>
+            <section name="common">
+                <attribute name="Specification-Title" value="Teach Example"/>
+                <attribute name="Specification-Version" value="${version}"/>
+                <attribute name="Specification-Vendor" value="Selfmade"/>
+                <attribute name="Implementation-Title" value="Teach"/>
+                <attribute name="Implementation-Version" value="${version}"/>
+                <attribute name="Implementation-Vendor" value="Selfmade"/>
+            </section>
+            <attribute name="Main-Class"
+                       value="Launcher"/>
+            <attribute name="Class-Path"
+                       value="/ ."/>
+        </manifest>
+    </target>
+
+    <target name="distrib" description="Build Distrib" depends="compile, jetty-lib, manifest">
+        <copy todir="${bld}/WEB-INF">
+            <fileset dir="webapp/WEB-INF">
+                <include name="**/*"/>
+            </fileset>
+        </copy>
+        <copy todir="${bld}/WEB-INF/lib">
+            <fileset dir="lib">
+                <include name="*.jar"/>
+                <exclude name="jetty*.jar"/>
+                <exclude name="apache-el-*.jar"/>
+                <exclude name="apache-jsp-*.jar"/>
+                <exclude name="thymeleaf-*-javadoc.jar"/>
+                <exclude name="thymeleaf-*-sources.jar"/>
+                <exclude name="spring-*-sources.jar"/>
+            </fileset>
+        </copy>
+
+        <zip destfile="distribution/dual.war"
+             basedir="${bld}">
+
+        </zip>
+    </target>
+
+    <target name="clean" description="Clean Directories">
+        <delete dir="${bld}"/>
+        <delete dir="${dist}"/>
+        <delete dir="lib"/>
+    </target>
+</project>
